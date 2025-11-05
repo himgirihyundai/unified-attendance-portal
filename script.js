@@ -14,7 +14,9 @@ class HRMSDatabase {
                     email: 'anshbhadana@unified.com',
                     role: 'HR',
                     department: 'Management',
-                    position: 'HR Manager'
+                    position: 'HR Manager',
+                    plan: 'Enterprise',
+                    location: 'Head Office'
                 }
             ];
             localStorage.setItem('hrms_users', JSON.stringify(defaultUsers));
@@ -22,6 +24,41 @@ class HRMSDatabase {
         
         if (!localStorage.getItem('hrms_attendance')) {
             localStorage.setItem('hrms_attendance', JSON.stringify([]));
+        }
+        
+        if (!localStorage.getItem('hrms_shifts')) {
+            const defaultShifts = [
+                {
+                    id: 'shift_1',
+                    name: 'Morning Shift',
+                    startTime: '09:00',
+                    endTime: '17:00',
+                    gracePeriod: 15
+                },
+                {
+                    id: 'shift_2',
+                    name: 'Evening Shift',
+                    startTime: '14:00',
+                    endTime: '22:00',
+                    gracePeriod: 15
+                }
+            ];
+            localStorage.setItem('hrms_shifts', JSON.stringify(defaultShifts));
+        }
+        
+        if (!localStorage.getItem('hrms_locations')) {
+            const defaultLocations = [
+                {
+                    id: 'loc_1',
+                    name: 'Head Office',
+                    address: '123 Main Street, City',
+                    latitude: 28.6139,
+                    longitude: 77.2090,
+                    radius: 100,
+                    status: 'Active'
+                }
+            ];
+            localStorage.setItem('hrms_locations', JSON.stringify(defaultLocations));
         }
     }
     
@@ -89,10 +126,101 @@ class HRMSDatabase {
         }
         return false;
     }
+    
+    getShifts() {
+        return JSON.parse(localStorage.getItem('hrms_shifts') || '[]');
+    }
+    
+    addShift(shift) {
+        const shifts = this.getShifts();
+        shift.id = 'shift_' + Date.now();
+        shifts.push(shift);
+        localStorage.setItem('hrms_shifts', JSON.stringify(shifts));
+        return true;
+    }
+    
+    updateShift(shiftId, updates) {
+        const shifts = this.getShifts();
+        const index = shifts.findIndex(s => s.id === shiftId);
+        if (index !== -1) {
+            shifts[index] = { ...shifts[index], ...updates };
+            localStorage.setItem('hrms_shifts', JSON.stringify(shifts));
+            return true;
+        }
+        return false;
+    }
+    
+    deleteShift(shiftId) {
+        const shifts = this.getShifts();
+        const filteredShifts = shifts.filter(s => s.id !== shiftId);
+        localStorage.setItem('hrms_shifts', JSON.stringify(filteredShifts));
+        return true;
+    }
+    
+    getLocations() {
+        return JSON.parse(localStorage.getItem('hrms_locations') || '[]');
+    }
+    
+    addLocation(location) {
+        const locations = this.getLocations();
+        location.id = 'loc_' + Date.now();
+        locations.push(location);
+        localStorage.setItem('hrms_locations', JSON.stringify(locations));
+        return true;
+    }
+    
+    updateLocation(locationId, updates) {
+        const locations = this.getLocations();
+        const index = locations.findIndex(l => l.id === locationId);
+        if (index !== -1) {
+            locations[index] = { ...locations[index], ...updates };
+            localStorage.setItem('hrms_locations', JSON.stringify(locations));
+            return true;
+        }
+        return false;
+    }
+    
+    deleteLocation(locationId) {
+        const locations = this.getLocations();
+        const filteredLocations = locations.filter(l => l.id !== locationId);
+        localStorage.setItem('hrms_locations', JSON.stringify(filteredLocations));
+        return true;
+    }
+    
+    checkLocation(latitude, longitude, locationId) {
+        const locations = this.getLocations();
+        const location = locations.find(l => l.id === locationId);
+        
+        if (!location) return false;
+        
+        const distance = calculateDistance(
+            latitude, longitude,
+            location.latitude, location.longitude
+        );
+        
+        return distance <= location.radius;
+    }
+}
+
+// Calculate distance between two coordinates
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance in meters
 }
 
 const db = new HRMSDatabase();
 let currentUser = null;
+let currentLocation = null;
 
 // Unified login functionality
 document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -122,7 +250,10 @@ function showHRDashboard() {
     document.getElementById('hrName').textContent = `Welcome, ${currentUser.name}`;
     loadEmployees();
     loadAttendance();
+    loadShifts();
+    loadLocations();
     updateReports();
+    populateLocationSelect();
 }
 
 // Show Employee Dashboard
@@ -134,15 +265,20 @@ function showEmployeeDashboard() {
     setInterval(updateDateTime, 1000);
     loadEmployeeAttendanceHistory();
     checkTodayAttendance();
+    loadCurrentShift();
+    getCurrentLocation();
 }
 
 // Add Employee
 document.getElementById('addEmployeeForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
+    const passwordInput = document.getElementById('newEmployeePassword').value;
+    const password = passwordInput || '123456';
+    
     const newUser = {
         id: document.getElementById('newEmployeeId').value,
-        password: 'password123',
+        password: password,
         name: `${document.getElementById('newEmployeeFirstName').value} ${document.getElementById('newEmployeeLastName').value}`,
         email: document.getElementById('newEmployeeEmail').value,
         firstName: document.getElementById('newEmployeeFirstName').value,
@@ -150,6 +286,8 @@ document.getElementById('addEmployeeForm').addEventListener('submit', function(e
         department: document.getElementById('newEmployeeDepartment').value,
         position: document.getElementById('newEmployeePosition').value,
         phone: document.getElementById('newEmployeePhone').value,
+        plan: document.getElementById('newEmployeePlan').value,
+        location: document.getElementById('newEmployeeLocation').value,
         role: 'Employee',
         status: 'Active'
     };
@@ -165,7 +303,7 @@ document.getElementById('addEmployeeForm').addEventListener('submit', function(e
     }
     
     db.addUser(newUser);
-    showAlert('Employee added successfully! Default password: password123', 'success');
+    showAlert(`Employee added successfully! Password: ${password}`, 'success');
     document.getElementById('addEmployeeForm').reset();
     loadEmployees();
     updateReports();
@@ -178,7 +316,7 @@ function loadEmployees() {
     tbody.innerHTML = '';
     
     if (employees.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No employees found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No employees found</td></tr>';
         return;
     }
     
@@ -190,6 +328,8 @@ function loadEmployees() {
                 <td>${emp.email}</td>
                 <td>${emp.department}</td>
                 <td>${emp.position}</td>
+                <td><span class="badge badge-${emp.plan.toLowerCase()}">${emp.plan}</span></td>
+                <td>${emp.location || '-'}</td>
                 <td><span class="badge bg-success">${emp.status}</span></td>
                 <td>
                     <button class="btn btn-sm btn-primary" onclick="resetPassword('${emp.id}')" title="Reset Password">
@@ -215,7 +355,7 @@ function loadAttendance() {
     tbody.innerHTML = '';
     
     if (attendance.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No attendance records for today</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No attendance records for today</td></tr>';
         return;
     }
     
@@ -228,9 +368,88 @@ function loadAttendance() {
                 <td>${record.checkOut || '-'}</td>
                 <td><span class="badge bg-${record.status === 'Present' ? 'success' : 'warning'}">${record.status}</span></td>
                 <td>${record.location || '-'}</td>
+                <td>${record.shift || '-'}</td>
             </tr>
         `;
         tbody.innerHTML += row;
+    });
+}
+
+// Load Shifts
+function loadShifts() {
+    const shifts = db.getShifts();
+    const tbody = document.getElementById('shiftTableBody');
+    tbody.innerHTML = '';
+    
+    if (shifts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">No shifts found</td></tr>';
+        return;
+    }
+    
+    shifts.forEach(shift => {
+        const row = `
+            <tr>
+                <td>${shift.name}</td>
+                <td>${shift.startTime}</td>
+                <td>${shift.endTime}</td>
+                <td>${shift.gracePeriod} minutes</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="editShift('${shift.id}')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteShift('${shift.id}')" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+// Load Locations
+function loadLocations() {
+    const locations = db.getLocations();
+    const tbody = document.getElementById('locationTableBody');
+    tbody.innerHTML = '';
+    
+    if (locations.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No locations found</td></tr>';
+        return;
+    }
+    
+    locations.forEach(location => {
+        const row = `
+            <tr>
+                <td>${location.name}</td>
+                <td>${location.address}</td>
+                <td>${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</td>
+                <td>${location.radius}m</td>
+                <td><span class="badge bg-${location.status === 'Active' ? 'success' : 'secondary'}">${location.status}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="editLocation('${location.id}')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteLocation('${location.id}')" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+}
+
+// Populate Location Select
+function populateLocationSelect() {
+    const locations = db.getLocations();
+    const select = document.getElementById('newEmployeeLocation');
+    select.innerHTML = '<option value="">Select Location</option>';
+    
+    locations.forEach(location => {
+        if (location.status === 'Active') {
+            select.innerHTML += `<option value="${location.name}">${location.name}</option>`;
+        }
     });
 }
 
@@ -247,15 +466,38 @@ function updateReports() {
 
 // Employee Check In
 function checkIn() {
+    if (!currentLocation) {
+        showAlert('Please wait for location detection', 'warning');
+        return;
+    }
+    
+    // Check if employee is at assigned location
+    const employeeLocation = db.getLocations().find(l => l.name === currentUser.location);
+    if (employeeLocation) {
+        const isAtLocation = db.checkLocation(
+            currentLocation.latitude, 
+            currentLocation.longitude, 
+            employeeLocation.id
+        );
+        
+        if (!isAtLocation) {
+            showAlert('You are not within the designated office location', 'danger');
+            return;
+        }
+    }
+    
     const now = new Date();
+    const currentShift = getCurrentShiftForTime(now);
+    
     const attendance = {
         employeeId: currentUser.id,
         employeeName: currentUser.name,
         date: now.toDateString(),
         checkIn: now.toLocaleTimeString(),
         checkOut: null,
-        status: now.getHours() >= 9 ? 'Late' : 'Present',
-        location: 'Office Building'
+        status: determineAttendanceStatus(now, currentShift),
+        location: currentUser.location || 'Office',
+        shift: currentShift ? currentShift.name : 'General'
     };
     
     // Check if already checked in today
@@ -301,6 +543,114 @@ function checkOut() {
     showAlert('Checked out successfully!', 'success');
 }
 
+// Get current location
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                currentLocation = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                };
+                
+                const locationStatus = document.getElementById('locationStatus');
+                locationStatus.innerHTML = `<i class="fas fa-map-marker-alt me-2 location-valid"></i>Location detected (${currentLocation.latitude.toFixed(4)}, ${currentLocation.longitude.toFixed(4)})`;
+                
+                // Check if within designated location
+                if (currentUser.location) {
+                    const employeeLocation = db.getLocations().find(l => l.name === currentUser.location);
+                    if (employeeLocation) {
+                        const isAtLocation = db.checkLocation(
+                            currentLocation.latitude, 
+                            currentLocation.longitude, 
+                            employeeLocation.id
+                        );
+                        
+                        if (!isAtLocation) {
+                            locationStatus.innerHTML += `<br><small class="text-danger">Not within office location (${employeeLocation.radius}m radius)</small>`;
+                        } else {
+                            locationStatus.innerHTML += `<br><small class="text-success">Within office location</small>`;
+                        }
+                    }
+                }
+            },
+            function(error) {
+                const locationStatus = document.getElementById('locationStatus');
+                locationStatus.innerHTML = `<i class="fas fa-exclamation-triangle me-2 location-invalid"></i>Location access denied`;
+                showAlert('Location access is required for attendance', 'warning');
+            }
+        );
+    } else {
+        const locationStatus = document.getElementById('locationStatus');
+        locationStatus.innerHTML = `<i class="fas fa-times me-2 location-invalid"></i>Geolocation not supported`;
+    }
+}
+
+// Get current location for form
+function getCurrentLocationForForm() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                document.getElementById('locationLat').value = position.coords.latitude.toFixed(6);
+                document.getElementById('locationLng').value = position.coords.longitude.toFixed(6);
+                showAlert('Location captured successfully', 'success');
+            },
+            function(error) {
+                showAlert('Failed to get location', 'danger');
+            }
+        );
+    } else {
+        showAlert('Geolocation not supported', 'danger');
+    }
+}
+
+// Load current shift for employee
+function loadCurrentShift() {
+    const now = new Date();
+    const currentShift = getCurrentShiftForTime(now);
+    const shiftInfo = document.getElementById('shiftInfo');
+    
+    if (currentShift) {
+        shiftInfo.innerHTML = `<i class="fas fa-clock me-2"></i>Current Shift: ${currentShift.name} (${currentShift.startTime} - ${currentShift.endTime})`;
+    } else {
+        shiftInfo.innerHTML = `<i class="fas fa-clock me-2"></i>No active shift at this time`;
+    }
+}
+
+// Get current shift for time
+function getCurrentShiftForTime(time) {
+    const shifts = db.getShifts();
+    const currentTime = time.getHours() * 60 + time.getMinutes();
+    
+    for (const shift of shifts) {
+        const [startHour, startMin] = shift.startTime.split(':').map(Number);
+        const [endHour, endMin] = shift.endTime.split(':').map(Number);
+        const startTime = startHour * 60 + startMin;
+        const endTime = endHour * 60 + endMin;
+        
+        if (currentTime >= startTime && currentTime <= endTime) {
+            return shift;
+        }
+    }
+    
+    return null;
+}
+
+// Determine attendance status
+function determineAttendanceStatus(time, shift) {
+    if (!shift) return 'Present';
+    
+    const [startHour, startMin] = shift.startTime.split(':').map(Number);
+    const startTime = startHour * 60 + startMin;
+    const currentTime = time.getHours() * 60 + time.getMinutes();
+    
+    if (currentTime <= startTime + shift.gracePeriod) {
+        return 'Present';
+    } else {
+        return 'Late';
+    }
+}
+
 // Update Date and Time
 function updateDateTime() {
     const now = new Date();
@@ -336,7 +686,7 @@ function loadEmployeeAttendanceHistory() {
     tbody.innerHTML = '';
     
     if (attendance.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No attendance records found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No attendance records found</td></tr>';
         return;
     }
     
@@ -347,16 +697,167 @@ function loadEmployeeAttendanceHistory() {
                 <td>${record.checkIn || '-'}</td>
                 <td>${record.checkOut || '-'}</td>
                 <td><span class="badge bg-${record.status === 'Present' ? 'success' : 'warning'}">${record.status}</span></td>
+                <td>${record.location || '-'}</td>
+                <td>${record.shift || '-'}</td>
             </tr>
         `;
         tbody.innerHTML += row;
     });
 }
 
+// Shift Management Functions
+function showAddShiftModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addShiftModal'));
+    document.getElementById('addShiftForm').reset();
+    modal.show();
+}
+
+function addShift() {
+    const shift = {
+        name: document.getElementById('shiftName').value,
+        startTime: document.getElementById('shiftStartTime').value,
+        endTime: document.getElementById('shiftEndTime').value,
+        gracePeriod: parseInt(document.getElementById('shiftGracePeriod').value)
+    };
+    
+    db.addShift(shift);
+    showAlert('Shift added successfully', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('addShiftModal')).hide();
+    loadShifts();
+}
+
+function editShift(shiftId) {
+    const shift = db.getShifts().find(s => s.id === shiftId);
+    if (!shift) return;
+    
+    document.getElementById('shiftName').value = shift.name;
+    document.getElementById('shiftStartTime').value = shift.startTime;
+    document.getElementById('shiftEndTime').value = shift.endTime;
+    document.getElementById('shiftGracePeriod').value = shift.gracePeriod;
+    
+    const modal = new bootstrap.Modal(document.getElementById('addShiftModal'));
+    modal.show();
+    
+    // Change form submit behavior
+    const form = document.getElementById('addShiftForm');
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        
+        const updatedShift = {
+            name: document.getElementById('shiftName').value,
+            startTime: document.getElementById('shiftStartTime').value,
+            endTime: document.getElementById('shiftEndTime').value,
+            gracePeriod: parseInt(document.getElementById('shiftGracePeriod').value)
+        };
+        
+        db.updateShift(shiftId, updatedShift);
+        showAlert('Shift updated successfully', 'success');
+        modal.hide();
+        loadShifts();
+        
+        // Reset form submit behavior
+        form.onsubmit = function() { addShift(); };
+    };
+}
+
+function deleteShift(shiftId) {
+    if (confirm('Are you sure you want to delete this shift?')) {
+        db.deleteShift(shiftId);
+        showAlert('Shift deleted successfully', 'success');
+        loadShifts();
+    }
+}
+
+// Location Management Functions
+function showAddLocationModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addLocationModal'));
+    document.getElementById('addLocationForm').reset();
+    modal.show();
+}
+
+function addLocation() {
+    const location = {
+        name: document.getElementById('locationName').value,
+        address: document.getElementById('locationAddress').value,
+        latitude: parseFloat(document.getElementById('locationLat').value),
+        longitude: parseFloat(document.getElementById('locationLng').value),
+        radius: parseInt(document.getElementById('locationRadius').value),
+        status: 'Active'
+    };
+    
+    db.addLocation(location);
+    showAlert('Location added successfully', 'success');
+    bootstrap.Modal.getInstance(document.getElementById('addLocationModal')).hide();
+    loadLocations();
+    populateLocationSelect();
+}
+
+function editLocation(locationId) {
+    const location = db.getLocations().find(l => l.id === locationId);
+    if (!location) return;
+    
+    document.getElementById('locationName').value = location.name;
+    document.getElementById('locationAddress').value = location.address;
+    document.getElementById('locationLat').value = location.latitude;
+    document.getElementById('locationLng').value = location.longitude;
+    document.getElementById('locationRadius').value = location.radius;
+    
+    const modal = new bootstrap.Modal(document.getElementById('addLocationModal'));
+    modal.show();
+    
+    // Change form submit behavior
+    const form = document.getElementById('addLocationForm');
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        
+        const updatedLocation = {
+            name: document.getElementById('locationName').value,
+            address: document.getElementById('locationAddress').value,
+            latitude: parseFloat(document.getElementById('locationLat').value),
+            longitude: parseFloat(document.getElementById('locationLng').value),
+            radius: parseInt(document.getElementById('locationRadius').value)
+        };
+        
+        db.updateLocation(locationId, updatedLocation);
+        showAlert('Location updated successfully', 'success');
+        modal.hide();
+        loadLocations();
+        populateLocationSelect();
+        
+        // Reset form submit behavior
+        form.onsubmit = function() { addLocation(); };
+    };
+}
+
+function deleteLocation(locationId) {
+    if (confirm('Are you sure you want to delete this location?')) {
+        db.deleteLocation(locationId);
+        showAlert('Location deleted successfully', 'success');
+        loadLocations();
+        populateLocationSelect();
+    }
+}
+
+// Toggle password visibility
+function togglePasswordVisibility() {
+    const passwordInput = document.getElementById('newEmployeePassword');
+    const passwordToggle = document.getElementById('passwordToggle');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        passwordToggle.classList.remove('fa-eye');
+        passwordToggle.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        passwordToggle.classList.remove('fa-eye-slash');
+        passwordToggle.classList.add('fa-eye');
+    }
+}
+
 // Reset Password
 function resetPassword(employeeId) {
-    if (confirm('Reset password to default (password123)?')) {
-        db.updateUser(employeeId, { password: 'password123' });
+    if (confirm('Reset password to default (123456)?')) {
+        db.updateUser(employeeId, { password: '123456' });
         showAlert('Password reset successfully!', 'success');
     }
 }
@@ -374,6 +875,8 @@ function editEmployee(employeeId) {
     document.getElementById('newEmployeeDepartment').value = employee.department;
     document.getElementById('newEmployeePosition').value = employee.position;
     document.getElementById('newEmployeePhone').value = employee.phone || '';
+    document.getElementById('newEmployeePlan').value = employee.plan || 'Professional';
+    document.getElementById('newEmployeeLocation').value = employee.location || '';
     
     // Show add employee section
     showSection('addEmployee');
@@ -383,6 +886,7 @@ function editEmployee(employeeId) {
     form.onsubmit = function(e) {
         e.preventDefault();
         
+        const passwordInput = document.getElementById('newEmployeePassword').value;
         const updatedUser = {
             name: `${document.getElementById('newEmployeeFirstName').value} ${document.getElementById('newEmployeeLastName').value}`,
             email: document.getElementById('newEmployeeEmail').value,
@@ -390,8 +894,14 @@ function editEmployee(employeeId) {
             lastName: document.getElementById('newEmployeeLastName').value,
             department: document.getElementById('newEmployeeDepartment').value,
             position: document.getElementById('newEmployeePosition').value,
-            phone: document.getElementById('newEmployeePhone').value
+            phone: document.getElementById('newEmployeePhone').value,
+            plan: document.getElementById('newEmployeePlan').value,
+            location: document.getElementById('newEmployeeLocation').value
         };
+        
+        if (passwordInput) {
+            updatedUser.password = passwordInput;
+        }
         
         db.updateUser(employeeId, updatedUser);
         showAlert('Employee updated successfully!', 'success');
@@ -425,6 +935,7 @@ function showSection(section) {
 function logout() {
     if (confirm('Are you sure you want to logout?')) {
         currentUser = null;
+        currentLocation = null;
         document.getElementById('loginSection').classList.remove('d-none');
         document.getElementById('hrDashboard').classList.add('d-none');
         document.getElementById('employeeDashboard').classList.add('d-none');
@@ -472,29 +983,6 @@ document.getElementById('searchEmployee')?.addEventListener('input', function(e)
         row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
 });
-
-// Initialize location
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const locationStatus = document.getElementById('locationStatus');
-            if (locationStatus) {
-                locationStatus.innerHTML = `<i class="fas fa-map-marker-alt me-2"></i>Location detected (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`;
-            }
-        },
-        function(error) {
-            const locationStatus = document.getElementById('locationStatus');
-            if (locationStatus) {
-                locationStatus.innerHTML = `<i class="fas fa-exclamation-triangle me-2"></i>Location access denied`;
-            }
-        }
-    );
-} else {
-    const locationStatus = document.getElementById('locationStatus');
-    if (locationStatus) {
-        locationStatus.innerHTML = `<i class="fas fa-times me-2"></i>Geolocation not supported`;
-    }
-}
 
 // Auto-refresh attendance every 30 seconds for HR dashboard
 setInterval(() => {
