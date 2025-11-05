@@ -131,6 +131,7 @@ body {
 .text-success { color: #198754 !important; }
 .text-danger { color: #dc3545 !important; }
 .text-warning { color: #ffc107 !important; }
+.text-info { color: #0dcaf0 !important; }
 .text-muted { color: #6c757d !important; }
 
 /* Form Styles */
@@ -195,6 +196,16 @@ body {
     border-color: #b02a37;
 }
 
+.btn-info {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+}
+
+.btn-info:hover {
+    background-color: #0aa2c0;
+    border-color: #0a9ebc;
+}
+
 .btn-outline-light {
     border-color: rgba(255, 255, 255, 0.5);
 }
@@ -231,6 +242,15 @@ body {
     margin: 20px 0;
 }
 
+/* Shift Info */
+#shiftInfo {
+    font-size: 0.9rem;
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #e7f3ff;
+    border-radius: 8px;
+}
+
 /* Time Display */
 #currentTime {
     font-weight: 200;
@@ -254,6 +274,23 @@ body {
 .reports-section .card-body h2 {
     font-weight: bold;
     margin-bottom: 0.5rem;
+}
+
+/* Modal Styles */
+.modal-content {
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-footer {
+    border-top: 1px solid #dee2e6;
+    border-radius: 0 0 15px 15px;
 }
 
 /* Mobile Responsive */
@@ -300,6 +337,10 @@ body {
     .btn-lg {
         width: 100%;
         margin-bottom: 10px;
+    }
+    
+    .modal-dialog {
+        margin: 1rem;
     }
 }
 
@@ -429,4 +470,35 @@ button:focus {
     body {
         background: white !important;
     }
+}
+
+/* Plan Badge Styles */
+.badge-professional {
+    background-color: #0d6efd;
+}
+
+.badge-enterprise {
+    background-color: #6f42c1;
+}
+
+/* Location Status Indicators */
+.location-valid {
+    color: #198754;
+}
+
+.location-invalid {
+    color: #dc3545;
+}
+
+.location-pending {
+    color: #ffc107;
+}
+
+/* Shift Badge Styles */
+.shift-active {
+    background-color: #198754;
+}
+
+.shift-inactive {
+    background-color: #6c757d;
 }
