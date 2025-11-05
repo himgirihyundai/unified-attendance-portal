@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Attendance Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="loginSection" class="login-container">
+        <div class="login-card">
+            <div class="text-center mb-4">
+                <i class="fas fa-clock fa-3x text-primary mb-3"></i>
+                <h2>Unified Attendance Portal</h2>
+                <p class="text-muted">Employee Attendance Management System</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label class="form-label">User ID / Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <input type="text" class="form-control" id="userId" placeholder="Enter your ID or Email" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" class="form-control" id="password" placeholder="Enter Password" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </button>
+            </form>
+            
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Enter your credentials to access the portal
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- HR Dashboard -->
+    <div id="hrDashboard" class="dashboard-container d-none">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-users me-2"></i>Unified Attendance Portal
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3" id="hrName">Welcome, HR Admin</span>
+                    <button class="btn btn-outline-light" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid mt-4">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5><i class="fas fa-tachometer-alt me-2"></i>Quick Actions</h5>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <button class="list-group-item list-group-item-action" onclick="showSection('addEmployee')">
+                                <i class="fas fa-user-plus me-2"></i>Add Employee
+                            </button>
+                            <button class="list-group-item list-group-item-action" onclick="showSection('employeeList')">
+                                <i class="fas fa-users me-2"></i>All Employees
+                            </button>
+                            <button class="list-group-item list-group-item-action" onclick="showSection('attendance')">
+                                <i class="fas fa-calendar-check me-2"></i>Attendance
+                            </button>
+                            <button class="list-group-item list-group-item-action" onclick="showSection('reports')">
+                                <i class="fas fa-chart-bar me-2"></i>Reports
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-9">
+                    <!-- Add Employee Section -->
+                    <div id="addEmployeeSection" class="content-section">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-user-plus me-2"></i>Add New Employee</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="addEmployeeForm">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Employee ID</label>
+                                            <input type="text" class="form-control" id="newEmployeeId" placeholder="e.g., EMP001" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" class="form-control" id="newEmployeeEmail" placeholder="email@company.com" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">First Name</label>
+                                            <input type="text" class="form-control" id="newEmployeeFirstName" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Last Name</label>
+                                            <input type="text" class="form-control" id="newEmployeeLastName" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Department</label>
+                                            <select class="form-select" id="newEmployeeDepartment" required>
+                                                <option value="">Select Department</option>
+                                                <option value="IT">IT</option>
+                                                <option value="HR">HR</option>
+                                                <option value="Sales">Sales</option>
+                                                <option value="Marketing">Marketing</option>
+                                                <option value="Finance">Finance</option>
+                                                <option value="Operations">Operations</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Position</label>
+                                            <input type="text" class="form-control" id="newEmployeePosition" required>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Phone</label>
+                                            <input type="tel" class="form-control" id="newEmployeePhone">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Default Password</label>
+                                            <input type="text" class="form-control" id="newEmployeePassword" value="password123" readonly>
+                                            <small class="text-muted">Default password: password123</small>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Add Employee
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employee List Section -->
+                    <div id="employeeListSection" class="content-section d-none">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5><i class="fas fa-users me-2"></i>Employee List</h5>
+                                <input type="text" class="form-control w-25" id="searchEmployee" placeholder="Search employees...">
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Department</th>
+                                                <th>Position</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="employeeTableBody">
+                                            <!-- Employees will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Section -->
+                    <div id="attendanceSection" class="content-section d-none">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-calendar-check me-2"></i>Today's Attendance</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Employee ID</th>
+                                                <th>Name</th>
+                                                <th>Check In</th>
+                                                <th>Check Out</th>
+                                                <th>Status</th>
+                                                <th>Location</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="attendanceTableBody">
+                                            <!-- Attendance will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reports Section -->
+                    <div id="reportsSection" class="content-section d-none">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-bar me-2"></i>Reports</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h2 class="text-primary" id="totalEmployees">0</h2>
+                                                <p class="mb-0">Total Employees</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h2 class="text-success" id="presentToday">0</h2>
+                                                <p class="mb-0">Present Today</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h2 class="text-danger" id="absentToday">0</h2>
+                                                <p class="mb-0">Absent Today</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h2 class="text-warning" id="lateToday">0</h2>
+                                                <p class="mb-0">Late Today</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Dashboard -->
+    <div id="employeeDashboard" class="dashboard-container d-none">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-clock me-2"></i>Unified Attendance Portal
+                </a>
+                <div class="navbar-nav ms-auto">
+                    <span class="navbar-text me-3" id="employeeName">Welcome, Employee</span>
+                    <button class="btn btn-outline-light" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5><i class="fas fa-clock me-2"></i>Attendance System</h5>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="mb-4">
+                                <h2 id="currentTime" class="display-4">00:00:00</h2>
+                                <p id="currentDate" class="lead">Loading...</p>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <p id="locationStatus" class="text-muted">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Detecting location...
+                                </p>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <button class="btn btn-success btn-lg" id="checkInBtn" onclick="checkIn()">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Check In
+                                </button>
+                                <button class="btn btn-danger btn-lg" id="checkOutBtn" onclick="checkOut()" disabled>
+                                    <i class="fas fa-sign-out-alt me-2"></i>Check Out
+                                </button>
+                            </div>
+                            
+                            <div id="attendanceStatus" class="mt-3">
+                                <span class="badge bg-secondary">Not Checked In</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-history me-2"></i>Recent Attendance</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Check In</th>
+                                            <th>Check Out</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="employeeAttendanceHistory">
+                                        <!-- History will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
